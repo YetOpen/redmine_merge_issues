@@ -7,19 +7,32 @@
   <%= link_to l(:button_back), issue_path(@issue), :class => 'icon icon-back' %>
 </div>
 
-<h2><%= l(:label_merge_issue) %> #<%= @issue.id %> — <%= @issue.subject %></h2>
+<h2><%= l(:label_merge_screen_title) %> #<%= @issue.id %> — <%= @issue.subject %></h2>
 
 <%= form_tag(issue_merge_path(@issue), method: :post) do %>
   <div class="box tabular">
     <p>
-      <label style="white-space: nowrap; width: auto;margin-right: 30px" for="destination_issue_id"><%= l(:label_merge_issue) %></label>
-      <%= text_field_tag :destination_issue_id, '',
-          id: 'destination_issue_id',
+      <label style="white-space: nowrap; width: auto;margin-right: 30px" for="other_issue_id"><%= l(:label_merge_other_issue) %></label>
+      <%= text_field_tag :other_issue_id, '',
+          id: 'other_issue_id',
           placeholder: '123',
           size: 20,
           style: 'margin-left: auto',
           required: true,
           autofocus: true %>
+    </p>
+    <p>
+      <label style="white-space: nowrap; width: auto;margin-right: 30px"><%= l(:label_merge_direction) %></label>
+      <span style="display: inline-block">
+        <label class="block">
+          <%= radio_button_tag :merge_direction, 'into_other', true %>
+          <%= l(:label_merge_direction_into, id: @issue.id) %>
+        </label>
+        <label class="block">
+          <%= radio_button_tag :merge_direction, 'from_other' %>
+          <%= l(:label_merge_direction_from, id: @issue.id) %>
+        </label>
+      </span>
     </p>
   </div>
   <%= submit_tag l(:button_merge), :class => 'button-positive' %>

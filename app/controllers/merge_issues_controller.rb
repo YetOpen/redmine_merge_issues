@@ -15,28 +15,41 @@ class MergeIssuesController < ApplicationController
 
   # POST /issues/:issue_id/merge
   def create
-    destination_id = params[:destination_issue_id].to_s.gsub(/\A#/, '').strip.to_i
+    other_id = params[:other_issue_id].to_s.gsub(/\A#/, '').strip.to_i
 
-    if destination_id == 0 || destination_id == @issue.id
+    if other_id == 0 || other_id == @issue.id
       return redirect_back_with_error(l(:error_merge_same_issue))
     end
 
-    @destination = Issue.visible.find_by(id: destination_id)
+    other = Issue.visible.find_by(id: other_id)
 
-    unless @destination
-      return redirect_back_with_error(l(:error_merge_destination_not_found))
+    unless other
+      return redirect_back_with_error(l(:error_merge_other_not_found))
     end
 
-    unless User.current.allowed_to?(:merge_issues, @destination.project)
+    # Détermine source (supprimée) et destination (conservée) selon le sens choisi.
+    # 'from_other' : la demande saisie est la source, la demande courante la destination.
+    # Sinon (défaut) : la demande courante est la source, la demande saisie la destination.
+    if params[:merge_direction].to_s == 'from_other'
+      source = other
+      destination = @issue
+    else
+      source = @issue
+      destination = other
+    end
+
+    # Les deux projets sont impactés : on exige la permission sur chacun.
+    unless User.current.allowed_to?(:merge_issues, source.project) &&
+           User.current.allowed_to?(:merge_issues, destination.project)
       return redirect_back_with_error(l(:error_merge_not_allowed_on_destination))
     end
 
     begin
       ActiveRecord::Base.transaction do
-        merge_issues!(@issue, @destination)
+        merge_issues!(source, destination)
       end
-      flash[:notice] = l(:notice_merge_success, source: @issue.id, destination: @destination.id)
-      redirect_to issue_path(@destination)
+      flash[:notice] = l(:notice_merge_success, source: source.id, destination: destination.id)
+      redirect_to issue_path(destination)
     rescue StandardError => e
       Rails.logger.error("[MergeIssues] Merge failed: #{e.message}\n#{e.backtrace.first(5).join("\n")}")
       redirect_back_with_error(l(:error_merge_failed))
@@ -127,9 +140,24 @@ class MergeIssuesController < ApplicationController
     source.changesets.clear
 
     # 9. Move watchers
+    # On crée les Watcher directement (au lieu de add_watcher qui utilise
+    # Watcher.create sans bang et avale les erreurs de validation silencieusement).
+    # Toute copie échouée est tracée dans les logs au lieu de disparaître.
+    existing_watcher_ids = destination.watcher_user_ids
     source.watcher_users.each do |user|
-      destination.add_watcher(user) unless destination.watched_by?(user)
+      next if existing_watcher_ids.include?(user.id)
+
+      watcher = Watcher.new(watchable: destination, user: user)
+      if watcher.save
+        existing_watcher_ids << user.id
+      else
+        Rails.logger.warn(
+          "[MergeIssues] Watcher non copié (issue ##{source.id} -> ##{destination.id}) " \
+          "user ##{user.id} (#{user.login}) : #{watcher.errors.full_messages.join(', ')}"
+        )
+      end
     end
+    destination.watchers.reload
 
     # 10. Escalate priority to the highest of source and destination
     if source.priority.position > destination.priority.position
