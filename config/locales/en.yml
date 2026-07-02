@@ -1,5 +1,8 @@
 en:
   label_merge_screen_title: "Merge issue"
+  label_merge_multiple_screen_title: "Merge selected issues"
+  label_merge_multiple_hint: "Select the issue to keep. All other selected issues will be merged into it and then deleted."
+  notice_merge_multiple_success: "Issues %{sources} were successfully merged into issue #%{destination}."
   label_merge_other_issue: "Other issue"
   label_merge_direction: "Merge direction"
   label_merge_direction_into: "Merge this issue (#%{id}) into the entered issue — this issue will be deleted"

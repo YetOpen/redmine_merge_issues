@@ -16,5 +16,5 @@ Redmine::Plugin.register :redmine_merge_issues do
   requires_redmine version_or_higher: '6.0'
 
   permission :merge_issues,
-             { merge_issues: [:new, :create] }
+             { merge_issues: [:new, :create, :new_multiple, :create_multiple] }
 end

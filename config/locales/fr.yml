@@ -1,5 +1,8 @@
 fr:
   label_merge_screen_title: "Fusionner la demande"
+  label_merge_multiple_screen_title: "Fusionner les demandes sélectionnées"
+  label_merge_multiple_hint: "Sélectionnez la demande à conserver. Toutes les autres demandes sélectionnées y seront fusionnées puis supprimées."
+  notice_merge_multiple_success: "Les demandes %{sources} ont été fusionnées avec succès dans la demande #%{destination}."
   label_merge_other_issue: "Autre demande"
   label_merge_direction: "Sens de la fusion"
   label_merge_direction_into: "Fusionner cette demande (#%{id}) dans la demande saisie — cette demande sera supprimée"
