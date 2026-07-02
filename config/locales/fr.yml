@@ -6,6 +6,7 @@ fr:
   label_merge_direction_from: "Fusionner la demande saisie dans cette demande (#%{id}) — la demande saisie sera supprimée"
   label_merge_original_description: "*(Description originale de la demande #%{id} — %{subject} fusionnée dans cette demande)*"
   label_merge_note: "Demande #%{source_id} (%{source_subject}) fusionnée dans cette demande par %{user} le %{date}."
+  label_merge_source_custom_fields_heading: "*(Valeurs des champs personnalisés de la demande source #%{id} au moment de la fusion, conservées ici car elles seraient autrement perdues lors de la suppression de la source.)*"
   button_merge: "Fusionner"
   notice_merge_success: "La demande #%{source} a été fusionnée avec succès dans la demande #%{destination}."
   error_merge_same_issue: "La demande de destination doit être différente de la demande source."

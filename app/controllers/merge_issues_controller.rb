@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 class MergeIssuesController < ApplicationController
+  # `helper :custom_fields` makes `show_value` available on view_context, which
+  # is used by snapshot_source_custom_values below. Redmine's ApplicationController
+  # does NOT do `helper :all`, so each controller must include the helpers it needs.
+  helper :custom_fields
+
   before_action :find_issue
   before_action :authorize
 
@@ -171,7 +176,39 @@ class MergeIssuesController < ApplicationController
     journal.notify = false
     destination.save!
 
+    # 11bis. Snapshot the source's custom field values as a *private* journal note
+    # on the destination. acts_as_customizable declares custom_values with
+    # `dependent: :delete_all`, so step 12 hard-deletes them — without this
+    # snapshot the values would be lost. The note is private so the data is
+    # available to users with `view_private_notes` permission only.
+    snapshot_source_custom_values(source, destination)
+
     # 12. Destroy source issue (skips callbacks that might be slow; adjust if needed)
     source.destroy
+  end
+
+  # Builds a private journal note on `destination` containing each non-blank
+  # custom field value from `source`, formatted with the same helper Redmine
+  # uses on the issue page (so enumeration / user / version values are shown by
+  # name, not by id). Skipped when the source has no non-blank values.
+  def snapshot_source_custom_values(source, destination)
+    cfvs = source.visible_custom_field_values.reject { |cfv| cfv.value.blank? }
+    return if cfvs.empty?
+
+    body_lines = cfvs.map do |cfv|
+      "**#{cfv.custom_field.name}**\n#{view_context.show_value(cfv, false)}"
+    end
+
+    note_body = "#{l(:label_merge_source_custom_fields_heading, id: source.id)}\n\n" \
+                "#{body_lines.join("\n\n")}"
+
+    journal = Journal.new(
+      journalized: destination,
+      user: User.current,
+      notes: note_body,
+      private_notes: true
+    )
+    journal.notify = false
+    journal.save!
   end
 end
